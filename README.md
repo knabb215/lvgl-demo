@@ -100,6 +100,8 @@ The dashboard currently displays 4 sample lights:
 - 2 switch lights (Living Room, Bedroom)
 - 2 color lights (Kitchen RGB, Office Color)
 
+See `SCREENSHOT_INFO.md` for a detailed description of the UI, or view `dashboard_screenshot.png` for a visual preview.
+
 The Home Assistant API integration is currently stubbed out with logging. To enable actual control:
 
 1. Implement HTTP requests in `src/ha_api.c` using a library like libcurl

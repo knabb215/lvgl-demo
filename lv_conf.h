@@ -101,7 +101,4 @@
 #define LV_USE_TEXTAREA   1
 #define LV_USE_TABLE      1
 
-/* Colorwheel widget for color picker */
-#define LV_USE_COLORWHEEL 1
-
 #endif /*LV_CONF_H*/
