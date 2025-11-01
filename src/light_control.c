@@ -14,7 +14,10 @@ typedef struct {
     lv_obj_t *switch_btn;
     lv_obj_t *brightness_slider;
     lv_obj_t *brightness_label;
-    lv_obj_t *color_picker;
+    lv_obj_t *red_slider;
+    lv_obj_t *green_slider;
+    lv_obj_t *blue_slider;
+    lv_obj_t *color_preview;
     lv_obj_t *temp_slider;
     lv_obj_t *status_label;
 } light_card_data_t;
@@ -58,19 +61,23 @@ static void brightness_event_handler(lv_event_t *e)
     }
 }
 
-/* Event handler for color picker (color lights only) */
-static void color_picker_event_handler(lv_event_t *e)
+/* Event handler for color sliders (color lights only) */
+static void color_slider_event_handler(lv_event_t *e)
 {
     lv_event_code_t code = lv_event_get_code(e);
-    lv_obj_t *picker = lv_event_get_target(e);
     
     if (code == LV_EVENT_VALUE_CHANGED) {
         light_card_data_t *card_data = (light_card_data_t *)lv_event_get_user_data(e);
-        lv_color_t color = lv_colorwheel_get_rgb(picker);
         
-        card_data->light->red = color.ch.red;
-        card_data->light->green = color.ch.green;
-        card_data->light->blue = color.ch.blue;
+        card_data->light->red = (uint8_t)lv_slider_get_value(card_data->red_slider);
+        card_data->light->green = (uint8_t)lv_slider_get_value(card_data->green_slider);
+        card_data->light->blue = (uint8_t)lv_slider_get_value(card_data->blue_slider);
+        
+        /* Update color preview */
+        lv_color_t preview_color = lv_color_make(card_data->light->red, 
+                                                  card_data->light->green, 
+                                                  card_data->light->blue);
+        lv_obj_set_style_bg_color(card_data->color_preview, preview_color, 0);
         
         ha_api_set_light_color(card_data->light->entity_id, 
                               card_data->light->red,
@@ -109,7 +116,7 @@ lv_obj_t* light_control_create_card(lv_obj_t *parent, light_state_t *light)
     lv_obj_set_style_radius(card, 10, 0);
     
     /* Allocate card data */
-    light_card_data_t *card_data = lv_mem_alloc(sizeof(light_card_data_t));
+    light_card_data_t *card_data = (light_card_data_t *)lv_malloc(sizeof(light_card_data_t));
     memset(card_data, 0, sizeof(light_card_data_t));
     card_data->light = light;
     lv_obj_set_user_data(card, card_data);
@@ -155,31 +162,74 @@ lv_obj_t* light_control_create_card(lv_obj_t *parent, light_state_t *light)
     lv_obj_set_style_text_color(card_data->brightness_label, lv_color_white(), 0);
     lv_obj_align(card_data->brightness_label, LV_ALIGN_TOP_RIGHT, 0, 100);
     
-    /* For color lights, add color picker and temperature control */
+    /* For color lights, add RGB sliders and temperature control */
     if (light->type == LIGHT_TYPE_COLOR) {
-        /* Color picker */
-        lv_obj_t *color_title = lv_label_create(card);
-        lv_label_set_text(color_title, "Color:");
-        lv_obj_set_style_text_color(color_title, lv_color_white(), 0);
-        lv_obj_align(color_title, LV_ALIGN_TOP_LEFT, 0, 140);
+        /* RGB Control Title */
+        lv_obj_t *rgb_title = lv_label_create(card);
+        lv_label_set_text(rgb_title, "RGB Color:");
+        lv_obj_set_style_text_color(rgb_title, lv_color_white(), 0);
+        lv_obj_align(rgb_title, LV_ALIGN_TOP_LEFT, 0, 140);
         
-        card_data->color_picker = lv_colorwheel_create(card, true);
-        lv_obj_set_size(card_data->color_picker, 150, 150);
-        lv_obj_align(card_data->color_picker, LV_ALIGN_TOP_LEFT, 0, 165);
+        /* Color preview box */
+        card_data->color_preview = lv_obj_create(card);
+        lv_obj_set_size(card_data->color_preview, 60, 60);
+        lv_obj_align(card_data->color_preview, LV_ALIGN_TOP_RIGHT, 0, 165);
+        lv_color_t preview_color = lv_color_make(light->red, light->green, light->blue);
+        lv_obj_set_style_bg_color(card_data->color_preview, preview_color, 0);
+        lv_obj_set_style_border_width(card_data->color_preview, 2, 0);
+        lv_obj_set_style_border_color(card_data->color_preview, lv_color_white(), 0);
         
-        lv_color_t current_color = lv_color_make(light->red, light->green, light->blue);
-        lv_colorwheel_set_rgb(card_data->color_picker, current_color);
-        lv_obj_add_event_cb(card_data->color_picker, color_picker_event_handler, LV_EVENT_VALUE_CHANGED, card_data);
+        /* Red slider */
+        lv_obj_t *red_label = lv_label_create(card);
+        lv_label_set_text(red_label, "Red:");
+        lv_obj_set_style_text_color(red_label, lv_color_make(255, 100, 100), 0);
+        lv_obj_align(red_label, LV_ALIGN_TOP_LEFT, 0, 165);
+        
+        card_data->red_slider = lv_slider_create(card);
+        lv_obj_set_width(card_data->red_slider, 180);
+        lv_obj_align(card_data->red_slider, LV_ALIGN_TOP_LEFT, 50, 165);
+        lv_slider_set_range(card_data->red_slider, 0, 255);
+        lv_slider_set_value(card_data->red_slider, light->red, LV_ANIM_OFF);
+        lv_obj_set_style_bg_color(card_data->red_slider, lv_color_make(100, 0, 0), LV_PART_INDICATOR);
+        lv_obj_add_event_cb(card_data->red_slider, color_slider_event_handler, LV_EVENT_VALUE_CHANGED, card_data);
+        
+        /* Green slider */
+        lv_obj_t *green_label = lv_label_create(card);
+        lv_label_set_text(green_label, "Green:");
+        lv_obj_set_style_text_color(green_label, lv_color_make(100, 255, 100), 0);
+        lv_obj_align(green_label, LV_ALIGN_TOP_LEFT, 0, 200);
+        
+        card_data->green_slider = lv_slider_create(card);
+        lv_obj_set_width(card_data->green_slider, 180);
+        lv_obj_align(card_data->green_slider, LV_ALIGN_TOP_LEFT, 50, 200);
+        lv_slider_set_range(card_data->green_slider, 0, 255);
+        lv_slider_set_value(card_data->green_slider, light->green, LV_ANIM_OFF);
+        lv_obj_set_style_bg_color(card_data->green_slider, lv_color_make(0, 100, 0), LV_PART_INDICATOR);
+        lv_obj_add_event_cb(card_data->green_slider, color_slider_event_handler, LV_EVENT_VALUE_CHANGED, card_data);
+        
+        /* Blue slider */
+        lv_obj_t *blue_label = lv_label_create(card);
+        lv_label_set_text(blue_label, "Blue:");
+        lv_obj_set_style_text_color(blue_label, lv_color_make(100, 100, 255), 0);
+        lv_obj_align(blue_label, LV_ALIGN_TOP_LEFT, 0, 235);
+        
+        card_data->blue_slider = lv_slider_create(card);
+        lv_obj_set_width(card_data->blue_slider, 180);
+        lv_obj_align(card_data->blue_slider, LV_ALIGN_TOP_LEFT, 50, 235);
+        lv_slider_set_range(card_data->blue_slider, 0, 255);
+        lv_slider_set_value(card_data->blue_slider, light->blue, LV_ANIM_OFF);
+        lv_obj_set_style_bg_color(card_data->blue_slider, lv_color_make(0, 0, 100), LV_PART_INDICATOR);
+        lv_obj_add_event_cb(card_data->blue_slider, color_slider_event_handler, LV_EVENT_VALUE_CHANGED, card_data);
         
         /* Color temperature slider */
         lv_obj_t *temp_title = lv_label_create(card);
         lv_label_set_text(temp_title, "Temperature (K):");
         lv_obj_set_style_text_color(temp_title, lv_color_white(), 0);
-        lv_obj_align(temp_title, LV_ALIGN_TOP_LEFT, 0, 325);
+        lv_obj_align(temp_title, LV_ALIGN_TOP_LEFT, 0, 275);
         
         card_data->temp_slider = lv_slider_create(card);
         lv_obj_set_width(card_data->temp_slider, 250);
-        lv_obj_align(card_data->temp_slider, LV_ALIGN_TOP_LEFT, 0, 350);
+        lv_obj_align(card_data->temp_slider, LV_ALIGN_TOP_LEFT, 0, 300);
         lv_slider_set_range(card_data->temp_slider, 2000, 6500); /* Common CCT range */
         lv_slider_set_value(card_data->temp_slider, light->color_temp, LV_ANIM_OFF);
         lv_obj_add_event_cb(card_data->temp_slider, temp_event_handler, LV_EVENT_VALUE_CHANGED, card_data);
@@ -215,9 +265,14 @@ void light_control_update_card(lv_obj_t *card, light_state_t *light)
     lv_label_set_text(card_data->brightness_label, buf);
     
     /* Update color controls if it's a color light */
-    if (light->type == LIGHT_TYPE_COLOR && card_data->color_picker) {
-        lv_color_t color = lv_color_make(light->red, light->green, light->blue);
-        lv_colorwheel_set_rgb(card_data->color_picker, color);
+    if (light->type == LIGHT_TYPE_COLOR && card_data->red_slider) {
+        lv_slider_set_value(card_data->red_slider, light->red, LV_ANIM_OFF);
+        lv_slider_set_value(card_data->green_slider, light->green, LV_ANIM_OFF);
+        lv_slider_set_value(card_data->blue_slider, light->blue, LV_ANIM_OFF);
+        
+        /* Update color preview */
+        lv_color_t preview_color = lv_color_make(light->red, light->green, light->blue);
+        lv_obj_set_style_bg_color(card_data->color_preview, preview_color, 0);
         
         if (card_data->temp_slider) {
             lv_slider_set_value(card_data->temp_slider, light->color_temp, LV_ANIM_OFF);

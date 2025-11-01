@@ -32,6 +32,13 @@
 /* DPI of the display */
 #define LV_DPI_DEF 130
 
+/*====================
+   DRAW ENGINE SETTINGS
+ *====================*/
+
+/* Disable ARM Helium SIMD (not supported on x86/x64) */
+#define LV_USE_DRAW_SW_ASM 0
+
 /*=================
    FONT USAGE
  *=================*/

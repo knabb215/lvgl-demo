@@ -14,22 +14,6 @@ set(LV_CONF_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lv_conf.h CACHE STRING "" FORCE)
 # Add LVGL library
 add_subdirectory(lvgl)
 
-# lv_drivers configuration
-set(LV_DRV_CONF_PATH ${CMAKE_CURRENT_SOURCE_DIR}/lv_drv_conf.h CACHE STRING "" FORCE)
-
-# Create lv_drivers library manually
-file(GLOB_RECURSE LV_DRIVER_SOURCES "lv_drivers/*.c")
-add_library(lv_drivers ${LV_DRIVER_SOURCES})
-
-target_include_directories(lv_drivers PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/lv_drivers
-    ${SDL2_INCLUDE_DIRS}
-)
-
-target_link_libraries(lv_drivers PUBLIC lvgl ${SDL2_LIBRARIES})
-target_compile_definitions(lv_drivers PUBLIC USE_SDL=1)
-
 # Main application
 add_executable(lvgl_dashboard
     src/main.c
@@ -41,13 +25,12 @@ add_executable(lvgl_dashboard
 target_include_directories(lvgl_dashboard PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/lv_drivers
     ${SDL2_INCLUDE_DIRS}
 )
 
 target_link_libraries(lvgl_dashboard PRIVATE 
     lvgl 
-    lv_drivers
+    lvgl_examples
     ${SDL2_LIBRARIES}
     m
     pthread
@@ -55,5 +38,4 @@ target_link_libraries(lvgl_dashboard PRIVATE
 
 target_compile_definitions(lvgl_dashboard PRIVATE 
     LV_USE_SDL=1
-    USE_SDL=1
 )
