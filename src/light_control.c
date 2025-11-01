@@ -299,6 +299,11 @@ void light_control_update_card(lv_obj_t *card, light_state_t *light)
         }
     }
     
-    /* Update the stored light state */
-    memcpy(card_data->light, light, sizeof(light_state_t));
+    /* Update the stored light state fields individually to preserve the pointer */
+    card_data->light->is_on = light->is_on;
+    card_data->light->brightness = light->brightness;
+    card_data->light->red = light->red;
+    card_data->light->green = light->green;
+    card_data->light->blue = light->blue;
+    card_data->light->color_temp = light->color_temp;
 }

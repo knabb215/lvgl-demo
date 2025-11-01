@@ -86,5 +86,9 @@ int main(int argc, char *argv[])
     }
     
     printf("\nShutting down gracefully...\n");
+    
+    /* Cleanup resources */
+    lv_deinit();
+    
     return 0;
 }
