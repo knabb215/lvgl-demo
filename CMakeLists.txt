@@ -30,7 +30,6 @@ target_include_directories(lvgl_dashboard PRIVATE
 
 target_link_libraries(lvgl_dashboard PRIVATE 
     lvgl 
-    lvgl_examples
     ${SDL2_LIBRARIES}
     m
     pthread

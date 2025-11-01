@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 /* Display and input device configuration */
 #define DISPLAY_WIDTH  1024
@@ -17,6 +18,18 @@
 /* Home Assistant configuration - replace with your values */
 #define HA_URL "http://homeassistant.local:8123"
 #define HA_TOKEN "your_long_lived_access_token_here"
+
+/* Global flag for graceful shutdown */
+static volatile bool running = true;
+
+/**
+ * Signal handler for graceful shutdown
+ */
+static void signal_handler(int sig)
+{
+    (void)sig;
+    running = false;
+}
 
 /**
  * Main application entry point
@@ -27,6 +40,10 @@ int main(int argc, char *argv[])
     (void)argv;
     
     printf("LVGL Dashboard Starting...\n");
+    
+    /* Set up signal handlers for graceful shutdown */
+    signal(SIGINT, signal_handler);
+    signal(SIGTERM, signal_handler);
     
     /* Initialize LVGL */
     lv_init();
@@ -60,7 +77,7 @@ int main(int argc, char *argv[])
     printf("Press Ctrl+C to exit\n");
     
     /* Main event loop */
-    while (1) {
+    while (running) {
         /* Handle LVGL tasks */
         uint32_t time_till_next = lv_timer_handler();
         
@@ -68,5 +85,6 @@ int main(int argc, char *argv[])
         usleep(time_till_next * 1000);
     }
     
+    printf("\nShutting down gracefully...\n");
     return 0;
 }

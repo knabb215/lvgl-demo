@@ -22,6 +22,23 @@ typedef struct {
     lv_obj_t *status_label;
 } light_card_data_t;
 
+/**
+ * Cleanup handler for light card
+ */
+static void light_card_cleanup(lv_event_t *e)
+{
+    lv_event_code_t code = lv_event_get_code(e);
+    
+    if (code == LV_EVENT_DELETE) {
+        lv_obj_t *card = lv_event_get_target(e);
+        light_card_data_t *card_data = (light_card_data_t *)lv_obj_get_user_data(card);
+        if (card_data) {
+            lv_free(card_data);
+            lv_obj_set_user_data(card, NULL);
+        }
+    }
+}
+
 /* Event handler for power switch */
 static void switch_event_handler(lv_event_t *e)
 {
@@ -120,6 +137,9 @@ lv_obj_t* light_control_create_card(lv_obj_t *parent, light_state_t *light)
     memset(card_data, 0, sizeof(light_card_data_t));
     card_data->light = light;
     lv_obj_set_user_data(card, card_data);
+    
+    /* Add cleanup handler to free memory when card is deleted */
+    lv_obj_add_event_cb(card, light_card_cleanup, LV_EVENT_DELETE, NULL);
     
     /* Create title label */
     lv_obj_t *title_label = lv_label_create(card);

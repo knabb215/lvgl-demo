@@ -23,7 +23,11 @@ bool ha_api_init(const char *url, const char *token)
     }
     
     strncpy(ha_url, url, sizeof(ha_url) - 1);
+    ha_url[sizeof(ha_url) - 1] = '\0';  /* Ensure null termination */
+    
     strncpy(ha_token, token, sizeof(ha_token) - 1);
+    ha_token[sizeof(ha_token) - 1] = '\0';  /* Ensure null termination */
+    
     initialized = true;
     
     printf("Home Assistant API initialized with URL: %s\n", ha_url);
